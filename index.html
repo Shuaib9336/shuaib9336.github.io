@@ -3,9 +3,203 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>This is my site</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="description" content="Shuaib's GitHub Pages Website">
+    <meta name="author" content="Shuaib">
+    
+    <!-- Cache Control and Performance -->
+    <meta http-equiv="Cache-Control" content="public, max-age=3600">
+    <meta name="robots" content="index, follow">
+    
+    <!-- DNS Prefetch for better performance -->
+    <link rel="dns-prefetch" href="//github.com">
+    <link rel="dns-prefetch" href="//github.io">
+    
+    <title>Shuaib's GitHub Pages Website</title>
+    
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .container {
+            text-align: center;
+            max-width: 600px;
+            padding: 40px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .status {
+            margin: 20px 0;
+            padding: 10px;
+            border-radius: 5px;
+            display: none;
+        }
+        
+        .status.success {
+            background: rgba(76, 175, 80, 0.3);
+            border: 1px solid #4CAF50;
+        }
+        
+        .status.error {
+            background: rgba(244, 67, 54, 0.3);
+            border: 1px solid #f44336;
+        }
+        
+        .connectivity-info {
+            margin-top: 30px;
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+        
+        .retry-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s ease;
+        }
+        
+        .retry-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+    </style>
 </head>
 <body>
-    <h1>This is my GitHub Pages Website</h1>
+    <div class="container">
+        <h1>Welcome to Shuaib's GitHub Pages</h1>
+        <p>This is my personal website hosted on GitHub Pages.</p>
+        
+        <div id="status" class="status"></div>
+        
+        <div class="connectivity-info">
+            <p><strong>Connection Status:</strong> <span id="connection-status">Checking...</span></p>
+            <p><strong>Page Load Time:</strong> <span id="load-time">Calculating...</span></p>
+            <button class="retry-btn" onclick="checkConnectivity()" style="display: none;" id="retry-btn">
+                🔄 Retry Connection
+            </button>
+        </div>
+        
+        <div style="margin-top: 30px; font-size: 0.8em; opacity: 0.7;">
+            <p>If you're experiencing connection issues, this could be due to:</p>
+            <ul style="text-align: left; display: inline-block;">
+                <li>Network connectivity problems</li>
+                <li>DNS resolution issues</li>
+                <li>Firewall restrictions</li>
+                <li>Temporary GitHub Pages service issues</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Register Service Worker for offline support
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(function(registration) {
+                        console.log('ServiceWorker registration successful:', registration.scope);
+                        showStatus('🔧 Offline support enabled', 'success');
+                    })
+                    .catch(function(error) {
+                        console.log('ServiceWorker registration failed:', error);
+                    });
+            });
+            
+            // Listen for service worker messages
+            navigator.serviceWorker.addEventListener('message', function(event) {
+                if (event.data.type === 'CONNECTIVITY_RESTORED') {
+                    showStatus(event.data.message, 'success');
+                    updateConnectionStatus();
+                }
+            });
+        }
+        
+        // Track page load time
+        const startTime = performance.now();
+        
+        // Connection status check
+        function updateConnectionStatus() {
+            const loadTime = Math.round(performance.now() - startTime);
+            document.getElementById('load-time').textContent = loadTime + 'ms';
+            
+            if (navigator.onLine) {
+                document.getElementById('connection-status').textContent = '✅ Online';
+                showStatus('✅ Successfully connected to GitHub Pages!', 'success');
+            } else {
+                document.getElementById('connection-status').textContent = '❌ Offline';
+                showStatus('❌ No internet connection detected', 'error');
+                document.getElementById('retry-btn').style.display = 'inline-block';
+            }
+        }
+        
+        function showStatus(message, type) {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = message;
+            statusEl.className = 'status ' + type;
+            statusEl.style.display = 'block';
+        }
+        
+        function checkConnectivity() {
+            showStatus('🔄 Checking connection...', 'success');
+            
+            // Simple connectivity test
+            fetch('https://api.github.com/zen', { 
+                method: 'GET',
+                mode: 'no-cors',
+                cache: 'no-cache'
+            })
+            .then(() => {
+                showStatus('✅ Connection restored!', 'success');
+                updateConnectionStatus();
+                document.getElementById('retry-btn').style.display = 'none';
+            })
+            .catch(() => {
+                showStatus('❌ Still having connection issues. Please check your network.', 'error');
+            });
+        }
+        
+        // Listen for online/offline events
+        window.addEventListener('online', updateConnectionStatus);
+        window.addEventListener('offline', updateConnectionStatus);
+        
+        // Initial status check
+        window.addEventListener('load', updateConnectionStatus);
+        
+        // Error handling for unhandled promise rejections
+        window.addEventListener('unhandledrejection', function(event) {
+            console.warn('Unhandled promise rejection:', event.reason);
+            showStatus('⚠️ Network error occurred. Try refreshing the page.', 'error');
+            document.getElementById('retry-btn').style.display = 'inline-block';
+        });
+        
+        // Error handling for general errors
+        window.addEventListener('error', function(event) {
+            console.error('Error occurred:', event.error);
+            showStatus('⚠️ An error occurred. Please refresh the page.', 'error');
+        });
+    </script>
 </body>
 </html>
